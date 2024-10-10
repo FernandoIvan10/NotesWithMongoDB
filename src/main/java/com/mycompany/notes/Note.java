@@ -7,7 +7,7 @@ import java.util.Date;
  * @author Fernando Iván Ascencio Cortés
  */
 
-public class Notes {
+public class Note {
  // Variables
     // Note identifier
     private String id;
@@ -21,7 +21,7 @@ public class Notes {
     private Date updatedAt;
 
     // Constructor
-    public Notes(String id, String title, String content) {
+    public Note(String id, String title, String content) {
      // Initialization of variables
         this.id = id;
         this.title = title;
