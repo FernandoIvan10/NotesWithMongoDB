@@ -8,6 +8,7 @@ import com.mongodb.client.MongoDatabase;
  *
  * @author Fernando Iván Ascencio Cortés
  */
+
 public class MongoDBConnection {
  //Variables and constants
     // Constant containing the connection URL to mongo DB
