@@ -1,42 +1,32 @@
 package com.mycompany.notes;
 
-import java.util.Date;
-
-/**
- *
- * @author Fernando Iván Ascencio Cortés
- */
+import java.time.Instant;
 
 public class Note {
- // Variables
-    // Note identifier
-    private String id;
-    // Note title
+    // Attributes
+    private final String id;
     private String title;
-    // Note content
     private String content;
-    // Note creation date
-    private Date createdAt;
-    // Last modified date of the note
-    private Date updatedAt;
+    private final Instant createdAt;
+    private Instant updatedAt;
 
     // Constructor
     public Note(String id, String title, String content) {
-     // Initialization of variables
         this.id = id;
         this.title = title;
         this.content = content;
-        this.createdAt = new Date();
+        this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
+    }
+    
+    // Method to change the update date
+    private void touch() {
+        this.updatedAt = Instant.now();
     }
 
     // Getters y Setters
     public String getId() {
         return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public String getTitle() {
@@ -45,6 +35,8 @@ public class Note {
 
     public void setTitle(String title) {
         this.title = title;
+        // Modification date is updated
+        touch(); 
     }
 
     public String getContent() {
@@ -54,14 +46,14 @@ public class Note {
     public void setContent(String content) {
         this.content = content;
         // Modification date is updated
-        this.updatedAt = new Date(); 
+        touch(); 
     }
 
-    public Date getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public Date getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
