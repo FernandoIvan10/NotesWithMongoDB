@@ -4,30 +4,25 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 
-/**
- *
- * @author Fernando Iván Ascencio Cortés
- */
-
 public class MongoDBConnection {
- //Variables and constants
-    // Constant containing the connection URL to mongo DB
-    private static final String CONNECTION_STRING = "mongodb://localhost:27017";
-    // Constant containing the database name
-    private static final String DATABASE_NAME = "notesDB";
     // Instance representing the connection to MongoDB
     private MongoClient mongoClient;
     // Instance representing the database
     private MongoDatabase database;
 
- // Methods
     // Constructor
     public MongoDBConnection() {
-     // Initialization of variables
+        String connectionString = getConfig("MONGO_URI","mongodb://localhost:27017");
+        String databaseName = getConfig("MONGO_DB","notesDB");
         // A connection to MongoDB is established
-        mongoClient = MongoClients.create(CONNECTION_STRING);
+        mongoClient = MongoClients.create(connectionString);
         // Obtaining the database reference
-        database = mongoClient.getDatabase(DATABASE_NAME);
+        database = mongoClient.getDatabase(databaseName);
+    }
+    
+    // Method to obtain properties variables
+    private static String getConfig(String key, String defaultValue) {
+        return System.getProperty(key, defaultValue);
     }
 
     // Method to obtain the bd
