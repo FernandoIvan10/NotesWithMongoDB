@@ -2,159 +2,192 @@ package com.mycompany.notes;
 
 import java.util.Scanner;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
+import java.util.InputMismatchException;
+import java.util.List;
 import org.bson.Document;
 
-/**
- *
- * @author Fernando Iván Ascencio Cortés
- */
-
 public class App {
- //Variables and constants
     // Instance of class MongoDBConnection
     private static MongoDBConnection mongoDBConnection;
     // Instance representing a collection
     private static MongoCollection<Document> notesCollection;
     
-    // constants representing the names of fields and the collection itself
-    private static String NOTE_COLLECTION = "notes";
-    private static String TITLE_FIELD = "title";
-    private static String CONTENT_FIELD = "content";
-    private static String CREATION_DATE_FIELD = "createdAt";
-    private static String UPDATE_DATE_FIELD = "updateAt";
+    private static NoteService noteService;
+    private static NoteRepository repository;
+    private static Scanner read;
     
     // Program entry point
     public static void main(String[] args) {
-     // Variables
-        // scanner
-        Scanner read = new Scanner(System.in);
-        // User's choice
-        byte choice;
+        read = new Scanner(System.in);
+        byte choice; // User's choice
         
-        // The connection to the database is initialized
+        // Connection to the database
         mongoDBConnection = new MongoDBConnection();
-        // Connection to the notes collection is established
-        notesCollection = mongoDBConnection.getDatabase().getCollection(NOTE_COLLECTION);
+        notesCollection = mongoDBConnection.getDatabase().getCollection("notes");
         
-        // Principal menu
+        repository = new MongoNoteRepository(notesCollection);
+        noteService = new NoteService(repository);
+        
         do{
-            System.out.println("\n ********** Notes App **********");
+            showMenu();
+            choice = readOption(); // User selects an option
+            executeOption(choice);
+        }while(choice!=5);
+        
+        // clean the program
+        read.close();
+        mongoDBConnection.closeConnection();
+    }
+    
+    // Method to show the principal menu
+    private static void showMenu(){
+        System.out.println("\n ********** Notes App **********");
             System.out.println("1. Add Note");
             System.out.println("2. Edit Note");
             System.out.println("3. Delete Note");
             System.out.println("4. Show Notes");
             System.out.println("5. Exit");
             System.out.println("\n Choose an option: ");
-            choice = read.nextByte();
-            read.nextLine();
-
-            // The user's choice is validated
+    }
+    
+    private static byte readOption(){
+        while(true){
+            try{
+                byte option = read.nextByte();
+                read.nextLine();
+                
+                if(option<1 || option>5){
+                    System.out.println("\n Invalid option. Try again:");
+                    continue;
+                }
+                
+                return option;
+            }catch(InputMismatchException e){
+                read.nextLine(); // cleaning the input
+                System.out.println("\n Invalid input. Enter a number.");
+            }
+        }
+    }
+    
+    // Method to validate user's choice
+    private static void executeOption(byte choice){
             switch(choice){
                 case 1:
-                    addNote(read);
+                    addNote();
                     break;
                 case 2:
-                    modifyNote(read);
+                    modifyNote();
                     break;
                 case 3:
-                    deleteNote(read);
+                    deleteNote();
                     break;
                 case 4:
                     showNotes();
                     break;
-                default:
-                    System.out.println("\n Wrong entry, try again");
+                case 5:
+                    System.out.println("\n Bye");
+                    break;
             }
-        }while(choice!=5);
-        
-        // Scanner is closed
-        read.close();
-        // Connection is closed
-        mongoDBConnection.closeConnection();
     }
     
     // Method to add a note
-    private static void addNote(Scanner read){
-        // User enters data
+    private static void addNote(){
+        // Ask the user for data
         System.out.println("\n Title:");
         String title = read.nextLine();
-        System.out.println("Content:");
+        System.out.println("\n Content:");
         String content = read.nextLine();
         
-        // A new note is created
-        Note note = new Note(null,title,content);
-        
-        // The note is saved in MongoDB
-        Document doc = new Document(TITLE_FIELD, note.getTitle())
-            .append(CONTENT_FIELD, note.getContent())
-            .append(CREATION_DATE_FIELD, note.getCreatedAt())
-            .append(UPDATE_DATE_FIELD, note.getUpdatedAt());
-        notesCollection.insertOne(doc);
-        System.out.println("\n Note added successfully");
+        try{
+            noteService.addNote(title, content);
+            System.out.println("\n Note successfully added");
+        }catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
     
     // Method that allows the user to modify a task
-    private static void modifyNote(Scanner scanner) {
-        // User inserts a title
-        System.out.print("\n Title of the note you want to modify: ");
-        String oldTitle = scanner.nextLine();
-        
-        // Searching for the note
-        Document existingNote = notesCollection.find(new Document(TITLE_FIELD, oldTitle)).first();
-        if (existingNote == null) {
-            System.out.println("\n No note was found with that title");
+    private static void modifyNote() {
+        // Ask the user for the note
+        String id = selectNote();
+        if(id == null){ // Validate exit early
             return;
         }
-
+        
         // Asks the user for new data
-        System.out.print("New title: ");
-        String newTitle = scanner.nextLine();
-        System.out.print("New content: ");
-        String newContent = scanner.nextLine();
+        System.out.println("\n Enter the new data");
+        System.out.print("\n New title: ");
+        String newTitle = read.nextLine();
+        System.out.print("\n New content: ");
+        String newContent = read.nextLine();
 
-        // Modify the document with the new values
-        Document updatedDoc = new Document(TITLE_FIELD, newTitle)
-                .append(CONTENT_FIELD, newContent)
-                .append(UPDATE_DATE_FIELD, new java.util.Date()); // Actualizar la fecha
-        notesCollection.updateOne(existingNote, new Document("$set", updatedDoc));
-        System.out.println("\n Note successfully modified");
+        try{
+            noteService.modifyNote(id, newTitle, newContent);
+            System.out.println("\n Note successfully modified");
+        }catch(Exception e){
+            System.out.println(e.getMessage());
+        }
     }
     
     // Method to delete a note
-    private static void deleteNote(Scanner scanner) {
-        // User enters the title of the note to delete
-        System.out.print("\n Title of the note you want to delete: ");
-        String titleToDelete = scanner.nextLine();
-
-        // Searching for the note
-        Document existingNote = notesCollection.find(new Document(TITLE_FIELD, titleToDelete)).first();
-        if (existingNote == null) {
-            System.out.println("\n No note was found with that title");
+    private static void deleteNote() {
+        // Ask the user for the note
+        String id = selectNote();
+        if(id == null){ // Validate exit early
             return;
         }
-
-        // Delete the note
-        notesCollection.deleteOne(existingNote);
-        System.out.println("\n Note successfully deleted");
-    }
-
-    
-    // Method that displays notes
-     private static void showNotes() {
-        // Query results iterator
-        MongoCursor<Document> cursor = notesCollection.find().iterator();
-        // Notes are displayed
-        System.out.println("\n Notes:");
-        while (cursor.hasNext()) {
-            Document doc = cursor.next();
-            System.out.println("Title: " + doc.getString(TITLE_FIELD));
-            System.out.println("Content: " + doc.getString(CONTENT_FIELD));
-            System.out.println("Creation date: " + doc.getDate(CREATION_DATE_FIELD));
-            System.out.println("Modification date: " + doc.getDate(UPDATE_DATE_FIELD));
-            System.out.println("--------------------------");
+        
+        try{
+            noteService.deleteNote(id);
+            System.out.println("\n Note successfully deleted");
+        }catch(Exception e){
+            System.out.println(e.getMessage());
         }
     }
-     
-     
+    
+    // Method to show the content of all notes
+    private static void showNotes(){
+         List<Note> notes = noteService.getNotes();
+         
+         if(notes.isEmpty()){
+            System.out.println("\n No notes available.");
+            return;
+        }
+         
+         for(Note note : notes){
+             System.out.println(note.toString());
+         }
+     }
+    
+    // Method to user can select a note
+     private static String selectNote() {
+        List<Note> notes = noteService.getNotes();
+        if(notes.isEmpty()){
+            System.out.println("\n No notes available.");
+            return null;
+        }
+        
+        // Notes are displayed
+        System.out.println("\n Notes:");
+        for (int i = 0; i < notes.size(); i++) {
+            System.out.println((i + 1) + ") " + notes.get(i).getTitle());
+        }
+        System.out.println((notes.size()+1) + ") cancel");
+        
+        // User selects an option
+         System.out.println("\n Select an option: ");
+         int option = read.nextInt();
+         read.nextLine();
+         
+         if(option < 1 || option > notes.size()){
+             System.out.println("\n Invalid option.");
+             return null;
+         }
+         
+         if(option == (notes.size()+1)){
+             return null;
+         }
+         
+         return notes.get(option-1).getId();
+    }
 }

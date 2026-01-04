@@ -10,7 +10,7 @@ public class Note {
     private final Instant createdAt;
     private Instant updatedAt;
 
-    // Constructor
+    // Constructors
     public Note(String id, String title, String content) {
         this.id = id;
         this.title = title;
@@ -18,43 +18,54 @@ public class Note {
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
     }
-    
-    // Method to change the update date
-    private void touch() {
-        this.updatedAt = Instant.now();
-    }
 
-    // Getters y Setters
+    public Note(String id, String title, String content, Instant createdAt, Instant updatedAt) {
+        this.id = id;
+        this.title = title;
+        this.content = content;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
+    
+    // Getters
     public String getId() {
         return id;
     }
-
-    public String getTitle() {
+    
+    public String getTitle(){
         return title;
     }
-
-    public void setTitle(String title) {
-        this.title = title;
-        // Modification date is updated
-        touch(); 
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-        // Modification date is updated
-        touch(); 
-    }
-
+    
     public Instant getCreatedAt() {
         return createdAt;
     }
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public String getContent() {
+        return content;
+    }
+    
+    // Methods
+    public void changeTitle(String title) {
+        if(title == null || title.isBlank()){
+            throw new IllegalArgumentException("Title is required");
+        }
+        
+        this.title = title;
+        touch(); // Modification date is updated
+    }
+
+    public void changeContent(String content) {
+        this.content = content;
+        touch(); // Modification date is updated
+    }
+    
+    // Method to change the update date
+    private void touch() {
+        this.updatedAt = Instant.now();
     }
 
     @Override
